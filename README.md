@@ -1,6 +1,15 @@
 
 ## NETWORKWALKS-B084-WK4-PENETRATION-TESTING-AND-VULNERABILTY-ASSESSMENT
   
+        ** 🛡️ Penetration Testing and Vulnerabilty Assessment **
+   
+
+** Full black-box penetration test. Identify vulnerabilities, exploit them to demonstrate real impact, and document all findings in a 
+professional report **
+
+
+
+
 
 
 
