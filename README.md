@@ -41,7 +41,6 @@
 **Target:** https://medirozahospital.com  
 **Phase:** Reconnaissance & Infrastructure Intelligence  
 **Analyst:** Anderson Edaiyo Uzezi 
-
 **Assessment Date:** 22 November 2026
 
 ---
