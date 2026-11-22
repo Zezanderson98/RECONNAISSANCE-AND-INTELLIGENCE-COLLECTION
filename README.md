@@ -38,9 +38,13 @@
 ### Milestone 1 - Reconnaissance & Intelligence Collection
 
 **Assessment Type:** Black-Box Penetration Test  
+
 **Target:** https://medirozahospital.com  
+
 **Phase:** Reconnaissance & Infrastructure Intelligence  
+
 **Analyst:** Anderson Edaiyo Uzezi 
+
 **Assessment Date:** 22 November 2026
 
 ---
