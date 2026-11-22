@@ -1,13 +1,13 @@
 
 ## NETWORKWALKS-B084-WK4-PENETRATION-TESTING-AND-VULNERABILTY-ASSESSMENT
   
-        ** 🛡️ Penetration Testing and Vulnerabilty Assessment **
-   
+       
+<div align="center">
 
-** Full black-box penetration test. Identify vulnerabilities, exploit them to demonstrate real impact, and document all findings in a 
-professional report **
+# 🛡️ Penetration Testing Lab : Footprinting & Reconnaissance
 
-
+**Gathering Domain, DNS, Web Stack & WAF Intelligence with Kali Linux Tools**
+</div>
 
 
 
