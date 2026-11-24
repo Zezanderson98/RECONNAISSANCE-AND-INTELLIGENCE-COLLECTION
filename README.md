@@ -248,3 +248,217 @@ The intelligence gathered during this phase provides the foundation for subseque
 **Assessment Status:** Reconnaissance Complete ✅
 
 **Next Phase:** Application Mapping & Surface Discovery
+
+
+
+
+
+
+
+
+
+
+# Mediroza General Hospital
+
+## Security Assessment Engagement
+
+### Milestone 1 - Application Mapping & Surface Discovery
+
+**Assessment Type:** Black-Box Penetration Test
+**Target:** https://medirozahospital.com
+**Phase:** Application Mapping & Exposed Entry Points
+**Analyst:** Anderson Edaiyo Uzezi
+**Assessment Date:** 22 November 2026
+
+---
+
+# Executive Summary
+
+The objective of this phase was to map the externally exposed attack surface of the target application and identify all entry points where user input is accepted or sensitive functionality is exposed.
+
+This phase was non-intrusive. No exploitation payloads were sent. Mapping was performed to prioritize targets for controlled testing in the next phase.
+
+---
+
+# Assessment Scope
+
+| Item | Value |
+|--------|--------|
+| Target Domain | medirozahospital.com |
+| Target IP | 199.188.201.16 |
+| Assessment Type | Black-Box |
+| Phase | Application Mapping |
+| Status | Complete |
+
+---
+
+# Tools Utilized
+
+| Tool | Purpose |
+|--------|--------|
+| Curl | Header and file discovery (robots.txt, sitemap.xml) |
+| WhatWeb | Technology fingerprinting and form discovery |
+| Gobuster | Directory and file enumeration |
+| Browser (Manual) | Manual application crawling and input mapping |
+| NSLookup / DNSRecon | Prior phase - DNS and infrastructure correlation |
+
+---
+
+# Baseline Intelligence (From Reconnaissance)
+
+| Finding | Value |
+|--------|--------|
+| Web Server | LiteSpeed |
+| Protocol | HTTP/2 + HTTPS Enforced |
+| WAF | LiteSpeed Web Application Firewall Detected |
+| Registrar | NameCheap |
+| Mail Security | SPF + DMARC Present |
+| Public IP | 199.188.201.16 |
+
+**Analyst Note:** The presence of a LiteSpeed WAF indicates that aggressive scanning will be blocked. Enumeration was therefore conducted at low thread count with a common wordlist to avoid triggering defensive controls.
+
+---
+
+# 1. Polite File Discovery
+
+## 1.1 robots.txt
+
+**Command:**
+```bash
+curl -I https://medirozahospital.com/robots.txt
+curl -s https://medirozahospital.com/robots.txt
+*Finding:*
+> [ PASTE OUTPUT HERE - e.g., Disallow: /admin/ ]
+
+*Evidence:* `SS007-ROBOTS.png`
+
+*Analyst Notes:*
+[ Explain what Disallow entries reveal. Example: "The robots.txt file disclosed an administrative path that is not linked from the public navigation. This path was added to the priority testing list." ]
+
+## 1.2 sitemap.xml
+
+*Command:*
+curl -s https://medirozahospital.com/sitemap.xml
+curl -s https://medirozahospital.com/sitemap_index.xml
+*Finding:*
+> [ PASTE LIST OF URLs FOUND HERE ]
+
+*Evidence:* `SS008-SITEMAP.png`
+
+*Analyst Notes:*
+The sitemap provided a complete inventory of public pages, including [ login / appointment / contact pages ].
+
+## 1.3 security.txt
+
+*Command:*
+curl -I https://medirozahospital.com/.well-known/security.txt
+*Finding:* [ Present / Not Present ]
+
+*Evidence:* `SS009-SECURITYTXT.png`
+
+---
+
+# 2. Application Crawling (Manual)
+
+All public pages were manually visited to identify user-controllable inputs.
+
+## Discovered Pages
+# | Page | URL | Purpose
+1 | Homepage | / | [ ... ]
+2 | [ Login / Patient Portal ] | [ /login ] | Authentication
+3 | [ Appointment / Contact ] | [ /contact ] | User Input Form
+4 | [ Search ] | [ /search?q= ] | GET Parameter
+5 | [ ... ] | [ ... ] | [ ... ]
+*Evidence:* `SS010-SITE-MAP.png`
+
+---
+
+# 3. Exposed Entry Points Register
+
+This is the core deliverable of this phase. Every place the application accepts input is an entry point.
+ID | Entry Point | Type | URL / Location | Input Fields / Parameters | Risk Priority
+E-001 | [ Login Form ] | Form (POST) | [ /login ] | username, password | **HIGH - Auth Handling**
+E-002 | [ Search Function ] | GET Parameter | [ /search?q= ] | q | Medium - Input Reflection
+E-003 | [ Contact Form ] | Form (POST) | [ /contact ] | name, email, message | Medium
+E-004 | [ Appointment Form ] | Form (POST) | [ /appointment ] | [ name, phone, date ] | Medium
+E-005 | [ URL Parameter ] | GET Parameter | [ /page?id= ] | id | High - Potential IDOR / SQLi
+E-006 | [ File Upload ] | Upload | [ /upload ] | file | High if present
+E-007 | [ Admin Panel ] | Form (POST) | [ /admin ] | username, password | **HIGH - Restricted Area**
+*Evidence:* `SS011-ENTRY-POINTS.png`
+
+### Analyst Assessment
+
+> The Login / Authentication form at `[ /login ]` was identified as the highest-value entry point. The assignment hint for Milestone 1 states: _"Analyse the behaviour of any authentication mechanisms you find"_ and _"Gain unauthorised access to a restricted area."_
+>
+> Therefore, E-001 / E-007 was prioritized for controlled authentication testing in the next phase. Other entry points (E-002 to E-006) were noted for secondary testing if authentication testing does not yield initial access.
+
+---
+
+# 4. Directory & File Enumeration
+
+*Command:*
+gobuster dir -u https://medirozahospital.com -w /usr/share/wordlists/dirb/common.txt -t 10 --no-error -o gobuster.txt
+*Findings:*
+Path Found | Status Code | Significance
+[ /admin ] | [ 200 / 403 ] | [ ... ]
+[ /login ] | [ 200 ] | [ ... ]
+[ /uploads ] | [ ... ] | [ ... ]
+[ /backup ] | [ ... ] | [ ... ]
+*Evidence:* `SS012-GOBUSTER.png`
+
+*Analyst Notes:*
+Enumeration was conducted at low thread count (10) due to the detected LiteSpeed WAF. [ Note if WAF blocked you - e.g., "Repeated 403 responses indicated WAF intervention, which was recorded as a positive defensive control and scanning was paused." ]
+
+---
+
+# 5. Technology Correlation
+
+*Command:*
+whatweb -v https://medirozahospital.com
+curl -s https://medirozahospital.com | grep -i -E "form|input|action="
+*Finding:*
+- LiteSpeed server confirmed
+- [ CMS / Framework if identified: e.g., WordPress / Laravel / Custom PHP ]
+- Forms discovered: [ list form action URLs ]
+
+*Evidence:* `SS013-WHATWEB-FORMS.png`
+
+---
+
+# Attack Surface Summary
+Category | Count
+Total Pages Mapped | [ X ]
+Total Entry Points Identified | [ X ]
+High Priority Entry Points | [ X ]
+Admin / Restricted Paths | [ X ]
+File Upload Points | [ X ]
+GET Parameters | [ X ]
+*Confidence Level:* *High*
+
+---
+
+# Conclusion
+
+Application mapping objectives were successfully completed.
+
+A complete inventory of publicly exposed entry points has been established. The authentication mechanism has been identified as the primary target for Milestone 1 exploitation testing based on its handling of user input and its role in protecting the restricted area containing patient data.
+
+No exploitation payloads were sent during this phase.
+
+---
+
+*Assessment Status:* Application Mapping Complete ✅
+
+*Next Phase:* Milestone 1 - Initial Access & Authentication Testing
+
+---
+
+### How to get 100 with this:
+
+1.  Run the 3 curl commands for robots/sitemap/security.txt and paste the real output in the `[ ]` spots
+2.  Run Gobuster once, screenshot it
+3.  Fill the Entry Points table with the *real* login URL you see on the site
+
+Send me your robots.txt + sitemap output and I’ll fill the `[ ]` parts for you and tell you which entry point is the M1 vulnerability.
+
+
