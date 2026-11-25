@@ -325,7 +325,9 @@ bash
 curl -I https://medirozahospital.com/robots.txt
 
 Finding:
+
 javascript
+
 HTTP/2 200
 content-type: text/plain
 last-modified: Fri, 04 Sep 2026 02:03:53 GMT
@@ -358,9 +360,11 @@ The first command confirms robots.txt exists and is publicly accessible with HTT
 The second command shows the file discloses three restricted paths not linked from public navigation: /patient/, /staff/, and /old/. All three were added to the priority testing list. This is information disclosure — robots.txt told an attacker exactly where the restricted areas are without needing to brute-force them. It also confirms the sitemap location at /sitemap.xml, used in the next step.
 
 ## 1.2 sitemap.xml
-1.2 sitemap.xml
+
 Command 1:
+
 bash
+
 curl -s https://medirozahospital.com/sitemap.xml
 
 Finding:
