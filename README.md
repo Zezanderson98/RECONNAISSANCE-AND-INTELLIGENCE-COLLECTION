@@ -300,7 +300,7 @@ This phase was non-intrusive. No exploitation payloads were sent. Mapping was pe
 | WhatWeb | Technology fingerprinting and form discovery |
 | Gobuster | Directory and file enumeration |
 | Browser (Manual) | Manual application crawling and input mapping |
-| NSLookup / DNSRecon | Prior phase - DNS and infrastructure correlation |
+
 
 ---
 
@@ -319,121 +319,441 @@ This phase was non-intrusive. No exploitation payloads were sent. Mapping was pe
 
 ---
 
-# 1. Polite File Discovery
-
-## 1.1 robots.txt
-
-**Command:**
-```bash
+1.1 robots.txt
+Command 1:
+bash
 curl -I https://medirozahospital.com/robots.txt
+
+Finding:
+javascript
+HTTP/2 200
+content-type: text/plain
+last-modified: Fri, 04 Sep 2026 02:03:53 GMT
+accept-ranges: bytes
+content-length: 132
+date: Wed, 25 Nov 2026 01:51:05 GMT
+server: LiteSpeed
+x-turbo-charged-by: LiteSpeedEvidence: 
+
+SS007-ROBOTS.png - Screenshot 1
+
+Command 2:
+bash
+
 curl -s https://medirozahospital.com/robots.txt
-*Finding:*
-> [ PASTE OUTPUT HERE - e.g., Disallow: /admin/ ]
 
-*Evidence:* `SS007-ROBOTS.png`
+Finding:
+javascript
+User-agent: *
+Disallow: /patient/
+Disallow: /staff/
+Disallow: /old/
 
-*Analyst Notes:*
-[ Explain what Disallow entries reveal. Example: "The robots.txt file disclosed an administrative path that is not linked from the public navigation. This path was added to the priority testing list." ]
+Sitemap: https://medirozahospital.com/sitemap.xml
+
+Evidence: SS007-ROBOTS.png - Screenshot 2
+
+Analyst Notes:
+The first command confirms robots.txt exists and is publicly accessible with HTTP 200. It is a small plain-text file of 132 bytes, served by LiteSpeed.
+The second command shows the file discloses three restricted paths not linked from public navigation: /patient/, /staff/, and /old/. All three were added to the priority testing list. This is information disclosure — robots.txt told an attacker exactly where the restricted areas are without needing to brute-force them. It also confirms the sitemap location at /sitemap.xml, used in the next step.
 
 ## 1.2 sitemap.xml
-
-*Command:*
+1.2 sitemap.xml
+Command 1:
+bash
 curl -s https://medirozahospital.com/sitemap.xml
+
+Finding:
+
+Javascript
+
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://medirozahospital.com/index.html</loc></url>
+  <url><loc>https://medirozahospital.com/about.html</loc></url>
+  <url><loc>https://medirozahospital.com/doctors.html</loc></url>
+  <url><loc>https://medirozahospital.com/contact.html</loc></url>
+</urlset>
+
+
+
+Evidence: SS008-SITEMAP.png - Screenshot 1
+
+
+
+Command 2:
+
+bash
+
 curl -s https://medirozahospital.com/sitemap_index.xml
-*Finding:*
-> [ PASTE LIST OF URLs FOUND HERE ]
 
-*Evidence:* `SS008-SITEMAP.png`
+Finding:
 
-*Analyst Notes:*
-The sitemap provided a complete inventory of public pages, including [ login / appointment / contact pages ].
+javascript
+
+404 Not Found
+<title>404 Not Found</title>
+<h1>404</h1>
+<h2>Not Found</h2>
+<p>The resource requested could not be found on this server!</p>
+Proudly powered by LiteSpeed Web Server
+
+Evidence: SS008-SITEMAP.png - Screenshot 2
+
+Analyst Notes:
+The first command shows sitemap.xml lists only 4 public pages: index.html, about.html, doctors.html, and contact.html. It does NOT list login, appointment, search, or admin pages.
+The second command confirms sitemap_index.xml does not exist — it returns 404 Not Found. This means there is only one sitemap file, not an index of multiple sitemaps. The public attack surface from the sitemap is therefore limited to those 4 pages.
+
 
 ## 1.3 security.txt
 
-*Command:*
+
+Command:
+
+bash
+
 curl -I https://medirozahospital.com/.well-known/security.txt
-*Finding:* [ Present / Not Present ]
 
-*Evidence:* `SS009-SECURITYTXT.png`
+Finding:
 
----
+javascript
 
-# 2. Application Crawling (Manual)
+HTTP/2 404
+date: Wed, 25 Nov 2026 02:20:04 GMT
+server: LiteSpeed
+x-turbo-charged-by: LiteSpeedFinding: Not Present
 
-All public pages were manually visited to identify user-controllable inputs.
+Evidence: SS009-SECURITYTXT.png
 
-## Discovered Pages
-# | Page | URL | Purpose
-1 | Homepage | / | [ ... ]
-2 | [ Login / Patient Portal ] | [ /login ] | Authentication
-3 | [ Appointment / Contact ] | [ /contact ] | User Input Form
-4 | [ Search ] | [ /search?q= ] | GET Parameter
-5 | [ ... ] | [ ... ] | [ ... ]
-*Evidence:* `SS010-SITE-MAP.png`
+Analyst Notes:
+The request returns HTTP 404 Not Found, confirming security.txt is Not Present. No vulnerability disclosure contact, no security policy, and no reporting email is published at /.well-known/security.txt. This means there is no defined channel for reporting vulnerabilities to the site owner, which is a low-severity best-practice finding.
 
----
 
-# 3. Exposed Entry Points Register
 
-This is the core deliverable of this phase. Every place the application accepts input is an entry point.
-ID | Entry Point | Type | URL / Location | Input Fields / Parameters | Risk Priority
-E-001 | [ Login Form ] | Form (POST) | [ /login ] | username, password | **HIGH - Auth Handling**
-E-002 | [ Search Function ] | GET Parameter | [ /search?q= ] | q | Medium - Input Reflection
-E-003 | [ Contact Form ] | Form (POST) | [ /contact ] | name, email, message | Medium
-E-004 | [ Appointment Form ] | Form (POST) | [ /appointment ] | [ name, phone, date ] | Medium
-E-005 | [ URL Parameter ] | GET Parameter | [ /page?id= ] | id | High - Potential IDOR / SQLi
-E-006 | [ File Upload ] | Upload | [ /upload ] | file | High if present
-E-007 | [ Admin Panel ] | Form (POST) | [ /admin ] | username, password | **HIGH - Restricted Area**
-*Evidence:* `SS011-ENTRY-POINTS.png`
+# Mediroza Hospital Security Assessment
+## Milestone 1 - Application Mapping & Attack Surface Enumeration
 
-### Analyst Assessment
-
-> The Login / Authentication form at `[ /login ]` was identified as the highest-value entry point. The assignment hint for Milestone 1 states: _"Analyse the behaviour of any authentication mechanisms you find"_ and _"Gain unauthorised access to a restricted area."_
->
-> Therefore, E-001 / E-007 was prioritized for controlled authentication testing in the next phase. Other entry points (E-002 to E-006) were noted for secondary testing if authentication testing does not yield initial access.
+**Assessment Status:** ✅ Complete  
+**Assessment Type:** Authorized Web Application Security Assessment  
+**Target:** `https://medirozahospital.com`  
+**Phase:** Application Mapping and Entry Point Identification
 
 ---
 
-# 4. Directory & File Enumeration
+# Objective
 
-*Command:*
-gobuster dir -u https://medirozahospital.com -w /usr/share/wordlists/dirb/common.txt -t 10 --no-error -o gobuster.txt
-*Findings:*
-Path Found | Status Code | Significance
-[ /admin ] | [ 200 / 403 ] | [ ... ]
-[ /login ] | [ 200 ] | [ ... ]
-[ /uploads ] | [ ... ] | [ ... ]
-[ /backup ] | [ ... ] | [ ... ]
-*Evidence:* `SS012-GOBUSTER.png`
+The objective of this phase was to identify and document all publicly accessible pages, exposed functionality, user-controllable inputs, and potential attack surfaces within the Mediroza Hospital web application.
 
-*Analyst Notes:*
-Enumeration was conducted at low thread count (10) due to the detected LiteSpeed WAF. [ Note if WAF blocked you - e.g., "Repeated 403 responses indicated WAF intervention, which was recorded as a positive defensive control and scanning was paused." ]
+No exploitation was performed during this phase. Activities were limited to reconnaissance, page discovery, entry point identification, and technology fingerprinting.
 
 ---
 
-# 5. Technology Correlation
+# Scope
 
-*Command:*
+The following activities were conducted:
+
+- Manual application crawling
+- Identification of user input locations
+- Entry point enumeration
+- Directory and file discovery
+- Technology fingerprinting
+- Attack surface mapping
+
+---
+
+# Methodology
+
+## 1. Manual Application Crawling
+
+All publicly accessible pages were manually visited and reviewed to establish the application structure and identify user-controllable inputs.
+
+### Discovered Pages
+
+| # | Page | URL | Purpose |
+|---|------|-----|----------|
+| 1 | Homepage | `/index.html` | Public landing page |
+| 2 | About | `/about.html` | Public information |
+| 3 | Doctors | `/doctors.html` | Public information |
+| 4 | Contact | `/contact.html` | User input form |
+| 5 | Patient Portal Login | `/patient/login.php` | Authentication |
+| 6 | Staff Login | `/staff/login.php` | Authentication |
+| 7 | Old Directory | `/old/` | Exposed backup files |
+
+### Evidence
+
+- `SS010-SITE-MAP.png`
+
+### Notes
+
+The following commonly encountered application endpoints were **not observed** during assessment:
+
+- `/login`
+- `/search?q=`
+- `/appointment`
+- `/upload`
+- `/admin`
+
+These entries were intentionally excluded from documentation because they could not be confirmed through manual verification.
+
+---
+
+# 2. Exposed Entry Points Register
+
+This section represents the primary deliverable of the mapping phase.
+
+Every confirmed location where the application accepts input or exposes sensitive functionality was documented.
+
+| ID | Entry Point | Type | URL / Location | Parameters / Inputs | Risk Priority |
+|----|------------|------|----------------|--------------------|--------------|
+| E-001 | Patient Login Form | POST Form | `/patient/login.php` | Patient ID, Password | HIGH |
+| E-002 | Staff Login Form | POST Form | `/staff/login.php` | Staff ID, Password | HIGH |
+| E-003 | Contact Form | POST Form | `/contact.html` | Name, Email, Message | MEDIUM |
+| E-004 | Directory Listing Exposure | Directory Listing | `/old/` | None | CRITICAL |
+| E-005 | robots.txt / sitemap.xml | Information Disclosure | `/robots.txt`, `/sitemap.xml` | None | LOW |
+
+### Evidence
+
+- `SS011-ENTRY-POINTS.png`
+
+---
+
+# Analyst Assessment
+
+The authentication portals were identified as the highest-value entry points:
+
+- `/patient/login.php`
+- `/staff/login.php`
+
+These endpoints directly protect access to restricted functionality and patient-related resources.
+
+Based on Milestone 1 objectives:
+
+> Analyze the behavior of authentication mechanisms and identify opportunities for unauthorized access.
+
+The authentication systems (E-001 and E-002) were therefore selected as primary targets for controlled testing during the next phase.
+
+Additionally:
+
+### Critical Observation
+
+The `/old/` directory exposed a visible SQL database backup file:
+
+```
+mediroza_db_backup_2019.sql
+```
+
+The existence of the file was confirmed through directory listing only.
+
+**No download, access, or inspection of database contents was performed.**
+
+This issue was prioritized as a **Critical Data Exposure Finding** requiring immediate remediation.
+
+---
+
+# 3. Directory & File Enumeration
+
+## Tool Used
+
+```bash
+gobuster dir \
+-u https://medirozahospital.com \
+-w /usr/share/wordlists/dirb/common.txt \
+-t 10 \
+--no-error \
+-o gobuster.txt
+```
+
+## Findings
+
+| Path | Status | Observation |
+|--------|---------|-------------|
+| `/robots.txt` | 200 | References `/patient/`, `/staff/`, `/old/` |
+| `/sitemap.xml` | 200 | Lists public pages |
+| `/wp-admin` | 200 | False positive (Cloudflare challenge page) |
+| `/old/` | 200 | Directory listing enabled |
+| `/.git/HEAD` | 403 | Access blocked |
+| `/.htaccess` | 403 | Access blocked |
+| `/admin` | Not Found | Not confirmed |
+| `/login` | Not Found | Not confirmed |
+| `/uploads` | Not Found | Not confirmed |
+| `/backup` | Not Found | Not confirmed |
+
+### Evidence
+
+- `SS012-GOBUSTER.png`
+
+---
+
+## Enumeration Assessment
+
+Automated enumeration results were significantly impacted by:
+
+- Cloudflare Bot Protection
+- LiteSpeed WAF
+- Browser verification challenges
+
+Example:
+
+Requesting `/wp-admin` generated a Cloudflare challenge page containing:
+
+```html
+<title>Checking your browser</title>
+```
+
+This response generated a false positive 200 status code.
+
+Additionally:
+
+- Repeated 403 responses were observed
+- WAF controls actively interfered with automated scanning
+
+Because of this behavior:
+
+> Manual browser-based enumeration was treated as the authoritative source of truth for all findings.
+
+---
+
+# 4. Technology Correlation
+
+## Tool Used
+
+```bash
 whatweb -v https://medirozahospital.com
-curl -s https://medirozahospital.com | grep -i -E "form|input|action="
-*Finding:*
-- LiteSpeed server confirmed
-- [ CMS / Framework if identified: e.g., WordPress / Laravel / Custom PHP ]
-- Forms discovered: [ list form action URLs ]
+```
 
-*Evidence:* `SS013-WHATWEB-FORMS.png`
+## Findings
+
+### Web Server
+
+- LiteSpeed Server
+- Header: `x-turbo-charged-by: LiteSpeed`
+- Powered By: LiteSpeed
+
+### Application Framework
+
+No CMS or framework was positively identified.
+
+The application is believed to be custom-built in PHP based on:
+
+- `.php` login endpoints
+- Static `.html` content
+- Absence of CMS fingerprints
+- No generator tags observed
+
+### Identified Forms
+
+| Method | Endpoint | Purpose |
+|----------|-----------|----------|
+| POST | `/patient/login.php` | Patient Login |
+| POST | `/staff/login.php` | Staff Login |
+| POST | `/contact.html` | Contact Form |
+
+### Evidence
+
+- `SS013-WHATWEB-FORMS.png`
 
 ---
 
 # Attack Surface Summary
-Category | Count
-Total Pages Mapped | [ X ]
-Total Entry Points Identified | [ X ]
-High Priority Entry Points | [ X ]
-Admin / Restricted Paths | [ X ]
-File Upload Points | [ X ]
-GET Parameters | [ X ]
-*Confidence Level:* *High*
+
+| Category | Count |
+|------------|--------|
+| Total Pages Mapped | 7 |
+| Total Entry Points | 5 |
+| High Priority Entry Points | 3 |
+| Admin / Restricted Paths Identified | 3 |
+| File Upload Locations | 0 |
+| GET Parameters Observed | 0 |
+
+## Confidence Rating
+
+| Activity | Confidence |
+|----------|-------------|
+| Manual Enumeration | High |
+| Automated Enumeration | Low |
+
+### Breakdown
+
+- 4 pages identified from sitemap
+- 2 authentication portals
+- 1 exposed directory listing
+
+High-priority targets:
+
+- E-001 (Patient Login)
+- E-002 (Staff Login)
+- E-004 (Exposed Backup Directory)
+
+No upload functionality was discovered.
+
+No GET parameters were observed during testing.
+
+---
+
+# Key Findings
+
+## Finding F-01: Authentication Entry Points Identified
+
+### Severity
+High
+
+### Description
+
+Two authentication systems were identified:
+
+- Patient Portal Authentication
+- Staff Portal Authentication
+
+These portals represent the primary security boundary of the application and therefore constitute the highest-value targets for further assessment.
+
+### Affected Endpoints
+
+- `/patient/login.php`
+- `/staff/login.php`
+
+### Status
+
+Selected for testing during the next assessment phase.
+
+---
+
+## Finding F-02: Exposed Database Backup via Directory Listing
+
+### Severity
+Critical
+
+### Description
+
+Directory indexing is enabled on:
+
+```text
+/old/
+```
+
+This directory publicly exposes:
+
+```text
+mediroza_db_backup_2019.sql
+```
+
+Although the file was not downloaded or accessed, its public availability represents a serious information disclosure risk.
+
+### Impact
+
+Potential exposure of:
+
+- Database schema
+- User accounts
+- Authentication data
+- Patient records
+- Internal application structure
+
+### Remediation
+
+- Disable directory listing.
+- Remove publicly accessible backups.
+- Store backups outside the web root.
+- Restrict access using server access controls.
 
 ---
 
@@ -441,24 +761,41 @@ GET Parameters | [ X ]
 
 Application mapping objectives were successfully completed.
 
-A complete inventory of publicly exposed entry points has been established. The authentication mechanism has been identified as the primary target for Milestone 1 exploitation testing based on its handling of user input and its role in protecting the restricted area containing patient data.
+A complete inventory of exposed functionality and publicly accessible entry points was established.
 
-No exploitation payloads were sent during this phase.
+### Summary
+
+- ✅ 7 pages mapped
+- ✅ 5 entry points identified
+- ✅ Authentication mechanisms identified
+- ✅ Attack surface documented
+- ✅ Critical exposed backup file discovered
+- ✅ WAF protections observed
+- ✅ No exploitation performed
+
+Automated scanning results were considered unreliable due to Cloudflare and LiteSpeed protections. Manual verification was therefore used as the authoritative assessment method.
 
 ---
 
-*Assessment Status:* Application Mapping Complete ✅
+# Next Phase
 
-*Next Phase:* Milestone 1 - Initial Access & Authentication Testing
+## Milestone 1 – Initial Access & Authentication Testing
+
+Primary assessment targets:
+
+### Authentication Mechanism Testing
+
+- Patient Login Portal (`/patient/login.php`)
+- Staff Login Portal (`/staff/login.php`)
+
+### Critical Exposure Review
+
+- Publicly exposed database backup:
+  - `/old/mediroza_db_backup_2019.sql`
+
+Assessment will proceed using controlled and authorized testing procedures in accordance with engagement scope and rules of engagement.
 
 ---
 
-### How to get 100 with this:
-
-1.  Run the 3 curl commands for robots/sitemap/security.txt and paste the real output in the `[ ]` spots
-2.  Run Gobuster once, screenshot it
-3.  Fill the Entry Points table with the *real* login URL you see on the site
-
-Send me your robots.txt + sitemap output and I’ll fill the `[ ]` parts for you and tell you which entry point is the M1 vulnerability.
-
-
+**Assessment Status:** ✅ Application Mapping Complete  
+**Next Phase:** Milestone 1 - Initial Access & Authentication Testing
