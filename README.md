@@ -251,6 +251,10 @@ The intelligence gathered during this phase provides the foundation for subseque
 
 
 
+## 👤 Author
+**Anderson Edaiyo Uzezi**  
+Cybersecurity Professional B084  
+LinkedIn: https://www.linkedin.com/in/anderson-edaiyo-bab74117b
 
 
 
