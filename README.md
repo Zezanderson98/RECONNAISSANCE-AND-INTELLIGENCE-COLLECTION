@@ -105,6 +105,19 @@ No intrusive testing was conducted during this phase.
 
 `SS001-WHOIS.png`
 
+
+<img width="1360" height="662" alt="SS001-WHOIS" src="https://github.com/user-attachments/assets/5d172824-dabb-48fc-8709-690d2e058fbe" />
+
+
+
+
+
+
+
+
+
+
+
 ### Analyst Notes
 
 The registration and nameserver information provide attribution of the domain infrastructure and identify third-party providers involved in hosting and DNS management.
@@ -123,6 +136,21 @@ The registration and nameserver information provide attribution of the domain in
 ### Evidence
 
 `SS002-WHATWEB.png`
+
+
+
+
+<img width="1360" height="662" alt="SS002-WHATWEB" src="https://github.com/user-attachments/assets/1b440792-e5d7-4afa-952c-31862022d666" />
+
+
+
+
+
+
+
+
+
+
 
 ### Analyst Notes
 
@@ -145,6 +173,22 @@ Multiple indicators suggest the target infrastructure is hosted on a LiteSpeed-p
 
 `SS003-NSLOOKUP.png`
 
+
+
+
+
+<img width="1360" height="662" alt="SS003-NSLOOKUP" src="https://github.com/user-attachments/assets/7189d4bf-95e4-4739-b5eb-244bb042c22d" />
+
+
+
+
+
+
+
+
+
+
+
 ### Analyst Notes
 
 The resolved IP was independently confirmed by technology fingerprinting activities.
@@ -163,6 +207,20 @@ The resolved IP was independently confirmed by technology fingerprinting activit
 
 `SS004-CURL-I.png`
 
+
+
+<img width="1360" height="662" alt="SS004-CURL -I" src="https://github.com/user-attachments/assets/9d1d70ab-35d1-4caa-bf33-33197a10306a" />
+
+
+
+
+
+
+
+
+
+
+
 ### Analyst Notes
 
 Technology disclosures contained within response headers contribute to infrastructure fingerprinting.
@@ -178,6 +236,19 @@ Technology disclosures contained within response headers contribute to infrastru
 ### Evidence
 
 `SS005-WAFW00F.png`
+
+
+
+<img width="1360" height="662" alt="SS005-WAFW00F" src="https://github.com/user-attachments/assets/2719397c-1dfd-4354-9e4e-8d5967173621" />
+
+
+
+
+
+
+
+
+
 
 ### Analyst Notes
 
@@ -198,6 +269,20 @@ The presence of a WAF demonstrates defensive controls protecting the application
 ### Evidence
 
 `SS006-DNSRECON.png`
+
+
+
+
+
+
+<img width="1360" height="662" alt="SS006-DNSRECON" src="https://github.com/user-attachments/assets/baf1d1cf-80b0-40d4-8cc1-13b34f984d86" />
+
+
+
+
+
+
+
 
 ### Analyst Notes
 
